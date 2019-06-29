@@ -29,3 +29,9 @@ before_install:
 script:
   - |
      make
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-xenial
