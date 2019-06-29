@@ -179,7 +179,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_name     = "Redbook Audio Player";
    info->library_version  = "1.0";
    info->need_fullpath    = true;
-   info->valid_extensions = "";
+   info->valid_extensions = "cue|bin";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
