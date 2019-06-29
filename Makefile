@@ -27,13 +27,13 @@ endif
 
 ifeq ($(platform),)
 platform = unix
-ifeq ($(shell uname -a),)
+ifeq ($(shell uname -s),)
    platform = win
-else ifneq ($(findstring MINGW,$(shell uname -a)),)
+else ifneq ($(findstring MINGW,$(shell uname -s)),)
    platform = win
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
+else ifneq ($(findstring Darwin,$(shell uname -s)),)
    platform = osx
-else ifneq ($(findstring win,$(shell uname -a)),)
+else ifneq ($(findstring win,$(shell uname -s)),)
    platform = win
 endif
 endif
@@ -143,7 +143,7 @@ include Makefile.common
 
 OBJECTS := $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o)
 
-CFLAGS   += -std=c89 -Wall -D_GNU_SOURCE -D__LIBRETRO__ $(fpic)
+CFLAGS   += -std=c99 -Wall -D_GNU_SOURCE -D__LIBRETRO__ $(fpic)
 CXXFLAGS += -Wall -D__LIBRETRO__ $(fpic)
 
 all: $(TARGET)
