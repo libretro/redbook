@@ -612,6 +612,10 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
+#ifdef HAVE_CDROM
+      if (stream->scheme == VFS_SCHEME_CDROM)
+         return retro_vfs_file_tell_cdrom(stream);
+#endif
 #ifdef ORBIS
       int64_t ret = orbisLseek(stream->fd, 0, SEEK_CUR);
       if (ret < 0)
@@ -622,11 +626,6 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 #ifdef ATLEAST_VC2005
       return _ftelli64(stream->fp);
 #else
-#ifdef HAVE_CDROM
-      if (stream->scheme == VFS_SCHEME_CDROM)
-         return retro_vfs_file_tell_cdrom(stream);
-      else
-#endif
          return ftell(stream->fp);
 #endif
 #endif
