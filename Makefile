@@ -126,15 +126,15 @@ else ifeq ($(platform), vita)
 else
    CC = gcc
    TARGET := $(TARGET_NAME)_libretro.dll
-   SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
+   SHARED := -shared -static-libgcc -static-libstdc++ -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 endif
 
 LDFLAGS += $(LIBM)
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -O0 -g3 -DDEBUG -D_DEBUG
-   CXXFLAGS += -O0 -g3 -DDEBUG -D_DEBUG
-   LDFLAGS += -g3
+   CFLAGS += -O0 -ggdb -g3 -DDEBUG -D_DEBUG
+   CXXFLAGS += -O0 -ggdb -g3 -DDEBUG -D_DEBUG
+   LDFLAGS += -O0 -ggdb -g3 -DDEBUG -D_DEBUG
 else
    CFLAGS += -O3
    CXXFLAGS += -O3

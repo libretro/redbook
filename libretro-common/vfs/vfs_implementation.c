@@ -490,12 +490,24 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    stream->size = orbisLseek(stream->fd, 0, SEEK_END);
    orbisLseek(stream->fd, 0, SEEK_SET);
 #else
-   retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
-   retro_vfs_file_seek_internal(stream, 0, SEEK_END);
+   if (stream->scheme == VFS_SCHEME_CDROM)
+   {
+      retro_vfs_file_seek_cdrom(stream, 0, SEEK_SET);
+      retro_vfs_file_seek_cdrom(stream, 0, SEEK_END);
 
-   stream->size = retro_vfs_file_tell_impl(stream);
+      stream->size = retro_vfs_file_tell_impl(stream);
 
-   retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
+      retro_vfs_file_seek_cdrom(stream, 0, SEEK_SET);
+   }
+   else
+   {
+      retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
+      retro_vfs_file_seek_internal(stream, 0, SEEK_END);
+
+      stream->size = retro_vfs_file_tell_impl(stream);
+
+      retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
+   }
 #endif
    return stream;
 
