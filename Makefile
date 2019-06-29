@@ -132,8 +132,8 @@ endif
 LDFLAGS += $(LIBM)
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -O0 -g3 -DDEBUG
-   CXXFLAGS += -O0 -g3 -DDEBUG
+   CFLAGS += -O0 -g3 -DDEBUG -D_DEBUG
+   CXXFLAGS += -O0 -g3 -DDEBUG -D_DEBUG
    LDFLAGS += -g3
 else
    CFLAGS += -O3
