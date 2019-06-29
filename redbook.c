@@ -152,7 +152,7 @@ void redbook_run_frame(unsigned input_state)
 
       pos = strlcpy(play_string, "Track ", sizeof(play_string));
       pos = strlcat(play_string, track_string, sizeof(play_string) - pos);
-      pos = strlcat(play_string, " playing: ", sizeof(play_string) - pos);
+      pos = strlcat(play_string, " Playing: ", sizeof(play_string) - pos);
       pos = strlcat(play_string, audio_pos_string, sizeof(play_string) - pos);
       pos = strlcat(play_string, " / ", sizeof(play_string) - pos);
       pos = strlcat(play_string, audio_total_string, sizeof(play_string) - pos);
