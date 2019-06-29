@@ -18,9 +18,9 @@ endif
 
 CFLAGS += -DHAVE_CDROM
 
-INCLUDES += -Ilibretro-common/include
+INCLUDES += -Ilibretro-common/include -Iugui
 
-SOURCES_C := libretro.c redbook.c \
+SOURCES_C := libretro.c redbook.c ugui/ugui.c ugui_tools.c \
   libretro-common/file/file_path.c \
   libretro-common/compat/compat_strl.c \
   libretro-common/compat/compat_strcasestr.c \

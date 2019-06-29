@@ -17,7 +17,9 @@ You may obtain a copy of the License at
 #ifndef REDBOOK_H__
 #define REDBOOK_H__
 
+retro_audio_sample_batch_t audio_batch_cb;
 retro_audio_sample_t audio_cb;
+retro_video_refresh_t video_cb;
 
 void redbook_init(int width, int height, uint32_t *buf);
 

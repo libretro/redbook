@@ -51,8 +51,6 @@ static float last_aspect;
 static float last_sample_rate;
 static retro_environment_t environ_cb;
 static char retro_base_directory[4096];
-static retro_video_refresh_t video_cb;
-static retro_audio_sample_batch_t audio_batch_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
 /*static char retro_game_path[4096];
@@ -129,7 +127,7 @@ void retro_init(void)
    struct descriptor *desc = NULL;
    int i;
 
-   frame_buf = (uint32_t*)malloc(VIDEO_PIXELS * sizeof(uint32_t));
+   frame_buf = (uint32_t*)calloc(1, VIDEO_PIXELS * sizeof(uint32_t));
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &dir) && dir && *dir)
    {
@@ -348,8 +346,6 @@ void retro_run(void)
       check_variables();
 
    redbook_run_frame(input_state);
-
-   video_cb(frame_buf, VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_WIDTH * sizeof(uint32_t));
 }
 
 bool retro_load_game(const struct retro_game_info *info)
