@@ -147,7 +147,7 @@ void redbook_run_frame(unsigned input_state)
    }
 
    {
-      int bytes = 2352 * round(ONE_FRAME_AUDIO_BYTES / 2352);
+      int bytes = ONE_FRAME_AUDIO_BYTES;
 
       char *data = calloc(1, bytes);
 
