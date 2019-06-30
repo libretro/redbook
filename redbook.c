@@ -163,6 +163,7 @@ end:
       char play_string[512] = {0};
       size_t pos = 0;
       char track_string[4] = {0};
+      char total_track_string[4] = {0};
       char audio_pos_string[10] = {0};
       char audio_total_string[10] = {0};
       int i;
@@ -192,22 +193,26 @@ end:
       lba_to_msf(toc->track[audio_track - 1].track_size, &total_track_min, &total_track_sec, &total_track_frame);
 
       snprintf(track_string, sizeof(track_string), "%02u", (unsigned)audio_track);
+      snprintf(total_track_string, sizeof(total_track_string), "%02u", (unsigned)toc->num_tracks);
       snprintf(audio_pos_string, sizeof(audio_pos_string), "%02u:%02u", (unsigned)cur_track_min, (unsigned)cur_track_sec);
       snprintf(audio_total_string, sizeof(audio_total_string), "%02u:%02u", (unsigned)total_track_min, (unsigned)total_track_sec);
 
       pos = strlcpy(play_string, "Track ", sizeof(play_string));
-      pos = strlcat(play_string, track_string, sizeof(play_string) - pos);
+      pos = strlcat(play_string + pos, track_string, sizeof(play_string) - pos);
+      pos = strlcat(play_string + pos, " of ", sizeof(play_string) - pos);
+      pos = strlcat(play_string + pos, total_track_string, sizeof(play_string) - pos);
 
       if (paused)
-         pos = strlcat(play_string, " Paused: ", sizeof(play_string) - pos);
+         pos = strlcat(play_string + pos, "\n\nPaused: ", sizeof(play_string) - pos);
       else
-         pos = strlcat(play_string, " Playing: ", sizeof(play_string) - pos);
+         pos = strlcat(play_string + pos, "\n\nPlaying: ", sizeof(play_string) - pos);
 
-      pos = strlcat(play_string, audio_pos_string, sizeof(play_string) - pos);
-      pos = strlcat(play_string, " / ", sizeof(play_string) - pos);
-      pos = strlcat(play_string, audio_total_string, sizeof(play_string) - pos);
+      pos = strlcat(play_string + pos, audio_pos_string, sizeof(play_string) - pos);
+      pos = strlcat(play_string + pos, " / ", sizeof(play_string) - pos);
+      pos = strlcat(play_string + pos, audio_total_string, sizeof(play_string) - pos);
 
       gui_set_message(play_string);
+      gui_set_footer("Left/Right = Previous/Next, B = Pause");
       gui_draw();
       video_cb(gui_get_framebuffer(), frame_width, frame_height, frame_width * sizeof(uint32_t));
    }

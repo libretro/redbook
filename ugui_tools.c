@@ -3,15 +3,19 @@
 #include <ugui.h>
 #include <stdio.h>
 
-#define UGUI_MAX_OBJECTS 2
+#define UGUI_MAX_OBJECTS 3
+#define FONT FONT_8X8
+
 static UG_GUI gui;
 static UG_WINDOW gui_window;
 static UG_TEXTBOX gui_textbox;
+static UG_TEXTBOX gui_textbox_footer;
 static UG_OBJECT gui_objbuf_wnd[UGUI_MAX_OBJECTS];
 static unsigned *frame_buf = NULL;
 static int width = 0;
 static int height = 0;
 static char gui_message[4096] = {0};
+static char gui_footer[4096] = {0};
 
 static void gui_window_callback(UG_MESSAGE *msg)
 {
@@ -36,11 +40,14 @@ void gui_init(int w, int h, int bpp)
 
    /* init uGUI */
    UG_Init(&gui, UserPixelSetFunction, width, height);
-   UG_FontSelect(&FONT_8X8);
+   UG_FontSelect(&FONT);
+   UG_ConsoleSetBackcolor(0x1d1f21);
 
    /* create a single window with no buttons */
    UG_WindowCreate(&gui_window, gui_objbuf_wnd, UGUI_MAX_OBJECTS, gui_window_callback);
-   UG_WindowSetForeColor(&gui_window, C_BLACK);
+   UG_WindowSetForeColor(&gui_window, 0xc5c8c6);
+   UG_WindowSetBackColor(&gui_window, 0x1d1f21);
+   UG_WindowSetTitleColor(&gui_window, 0x5f819d);
 
    UG_WindowSetXStart(&gui_window, 0);
    UG_WindowSetYStart(&gui_window, 0);
@@ -49,6 +56,9 @@ void gui_init(int w, int h, int bpp)
 
    UG_TextboxCreate(&gui_window, &gui_textbox, TXB_ID_0, 0, 0, UG_WindowGetInnerWidth(&gui_window) - 1, UG_WindowGetInnerHeight(&gui_window) - 1);
    UG_TextboxSetAlignment(&gui_window, TXB_ID_0, ALIGN_CENTER);
+
+   UG_TextboxCreate(&gui_window, &gui_textbox_footer, TXB_ID_1, 0, UG_WindowGetInnerHeight(&gui_window) - (FONT.char_height * 2), UG_WindowGetInnerWidth(&gui_window) - 1, UG_WindowGetInnerHeight(&gui_window) - 1);
+   UG_TextboxSetAlignment(&gui_window, TXB_ID_1, ALIGN_CENTER);
 
    UG_WindowShow(&gui_window);
 }
@@ -64,6 +74,17 @@ void gui_set_message(const char *message)
    UG_TextboxSetText(&gui_window, TXB_ID_0, gui_message);
 }
 
+void gui_set_footer(const char *message)
+{
+   memset(gui_footer, 0, sizeof(gui_footer));
+
+   snprintf(gui_footer, sizeof(gui_footer), "%s", message);
+
+   gui_footer[sizeof(gui_footer) - 1] = '\0';
+
+   UG_TextboxSetText(&gui_window, TXB_ID_1, gui_footer);
+}
+
 void gui_window_resize(int x, int y, int width, int height)
 {
    UG_WindowResize(&gui_window, x, y, width, height);
@@ -72,11 +93,14 @@ void gui_window_resize(int x, int y, int width, int height)
 void gui_set_window_title(const char *title)
 {
    UG_WindowSetTitleText(&gui_window, (char*)title);
+   UG_WindowSetTitleTextAlignment(&gui_window, ALIGN_CENTER);
 }
 
 void gui_draw(void)
 {
    if (!string_is_empty(gui_message))
       UG_TextboxSetText(&gui_window, TXB_ID_0, gui_message);
+   if (!string_is_empty(gui_footer))
+      UG_TextboxSetText(&gui_window, TXB_ID_1, gui_footer);
    UG_Update();
 }

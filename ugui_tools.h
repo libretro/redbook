@@ -15,6 +15,8 @@ void gui_set_window_title(const char *title);
 
 void gui_set_message(const char *message);
 
+void gui_set_footer(const char *message);
+
 void gui_window_resize(int x, int y, int width, int height);
 
 unsigned* gui_get_framebuffer(void);

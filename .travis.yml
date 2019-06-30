@@ -10,13 +10,13 @@ matrix:
       addons: true
       env: CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
     - compiler: gcc
-      env: CC=gcc-8 CXX=g++-8
+      env: CC=gcc-9 CXX=g++-9
 
 before_install:
   - |
-     if [ "$CC" = gcc-8 ]; then
+     if [ "$CC" = gcc-9 ]; then
        # Install a more recent gcc than the default
-       sudo apt-get install -y g++-8
+       sudo apt-get install -y gcc-9
      elif [ "$CC" = clang-6.0 ]; then
        # Install a more recent clang than the default
        sudo apt-get install -y clang-6.0
