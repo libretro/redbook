@@ -30,7 +30,9 @@ static unsigned *frame_buf = NULL;
 static int frame_width = 0;
 static int frame_height = 0;
 static RFILE *file = NULL;
+static unsigned char first_audio_track = 1;
 static unsigned char audio_track = 1;
+static bool paused = false;
 
 void redbook_init(int width, int height, uint32_t *buf)
 {
@@ -66,17 +68,59 @@ void redbook_run_frame(unsigned input_state)
 
    /*memset(frame_buf, 0xFFCCCCCC, frame_width * frame_height * sizeof(uint32_t));*/
 
-   switch(trigger_state)
+   switch (trigger_state)
    {
       case (1 << RETRO_DEVICE_ID_JOYPAD_A):
+         break;
       case (1 << RETRO_DEVICE_ID_JOYPAD_B):
+         paused = !paused;
+         break;
       case (1 << RETRO_DEVICE_ID_JOYPAD_UP):
       case (1 << RETRO_DEVICE_ID_JOYPAD_DOWN):
       case (1 << RETRO_DEVICE_ID_JOYPAD_LEFT):
+      {
+         if (audio_track > first_audio_track)
+            audio_track--;
+         else
+            audio_track = toc->num_tracks;
+
+         filestream_close(file);
+
+#ifdef _WIN32
+         snprintf(path, sizeof(path), "cdrom://%c:/drive-track%02d.bin", toc->drive, audio_track);
+#else
+         snprintf(path, sizeof(path), "cdrom://drive%c-track%02d.bin", toc->drive, audio_track);
+#endif
+
+         file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
+
+         break;
+      }
       case (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT):
+      {
+         if (toc->num_tracks > audio_track)
+            audio_track++;
+         else
+            audio_track = first_audio_track;
+
+         filestream_close(file);
+
+#ifdef _WIN32
+         snprintf(path, sizeof(path), "cdrom://%c:/drive-track%02d.bin", toc->drive, audio_track);
+#else
+         snprintf(path, sizeof(path), "cdrom://drive%c-track%02d.bin", toc->drive, audio_track);
+#endif
+
+         file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
+
+         break;
+      }
       default:
          break;
    }
+
+   if (paused)
+      goto end;
 
    if (!file)
    {
@@ -86,16 +130,18 @@ void redbook_run_frame(unsigned input_state)
       {
          if (toc->track[i].audio)
          {
-            audio_track = i + 1;
+            first_audio_track = i + 1;
             break;
          }
       }
 
 #ifdef _WIN32
-      snprintf(path, sizeof(path), "cdrom://%c:/drive-track%02d.bin", toc->drive, audio_track);
+      snprintf(path, sizeof(path), "cdrom://%c:/drive-track%02d.bin", toc->drive, first_audio_track);
 #else
-      snprintf(path, sizeof(path), "cdrom://drive%c-track%02d.bin", toc->drive, audio_track);
+      snprintf(path, sizeof(path), "cdrom://drive%c-track%02d.bin", toc->drive, first_audio_track);
 #endif
+
+      audio_track = first_audio_track;
 
       file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
    }
@@ -112,7 +158,7 @@ void redbook_run_frame(unsigned input_state)
          free(data);
       }
    }
-
+end:
    {
       char play_string[512] = {0};
       size_t pos = 0;
@@ -128,22 +174,21 @@ void redbook_run_frame(unsigned input_state)
       unsigned char total_track_min = 0;
       unsigned char total_track_sec = 0;
       unsigned char total_track_frame = 0;
-      unsigned cur_lba = 0;
 
       if (cdrom && toc->num_tracks && cdrom->cur_track)
       {
-         cur_lba = msf_to_lba(toc->track[cdrom->cur_track - 1].min + cdrom->cur_min, toc->track[cdrom->cur_track - 1].sec + cdrom->cur_sec, toc->track[cdrom->cur_track - 1].frame + cdrom->cur_frame);
-
          for (i = 0; i < toc->num_tracks; i++)
          {
-            if (cur_lba >= toc->track[i].lba_start)
-               audio_track = i + 1;
+            if (toc->track[i].lba >= cdrom->cur_lba)
+            {
+               /* this track starts after the current position, so the current track is right before this */
+               audio_track = i;
+               break;
+            }
          }
       }
-      else
-         cur_lba = msf_to_lba(toc->track[0].min + cdrom->cur_min, toc->track[0].sec + cdrom->cur_sec, toc->track[0].frame + cdrom->cur_frame);
 
-      lba_to_msf(cur_lba - toc->track[audio_track - 1].lba_start, &cur_track_min, &cur_track_sec, &cur_track_frame);
+      lba_to_msf(cdrom->cur_lba - toc->track[audio_track - 1].lba, &cur_track_min, &cur_track_sec, &cur_track_frame);
       lba_to_msf(toc->track[audio_track - 1].track_size, &total_track_min, &total_track_sec, &total_track_frame);
 
       snprintf(track_string, sizeof(track_string), "%02u", (unsigned)audio_track);
@@ -152,7 +197,12 @@ void redbook_run_frame(unsigned input_state)
 
       pos = strlcpy(play_string, "Track ", sizeof(play_string));
       pos = strlcat(play_string, track_string, sizeof(play_string) - pos);
-      pos = strlcat(play_string, " Playing: ", sizeof(play_string) - pos);
+
+      if (paused)
+         pos = strlcat(play_string, " Paused: ", sizeof(play_string) - pos);
+      else
+         pos = strlcat(play_string, " Playing: ", sizeof(play_string) - pos);
+
       pos = strlcat(play_string, audio_pos_string, sizeof(play_string) - pos);
       pos = strlcat(play_string, " / ", sizeof(play_string) - pos);
       pos = strlcat(play_string, audio_total_string, sizeof(play_string) - pos);
