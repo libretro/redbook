@@ -150,7 +150,9 @@ void redbook_run_frame(unsigned input_state)
       char data[ONE_FRAME_AUDIO_BYTES] = {0};
 
       filestream_read(file, data, sizeof(data));
-      audio_batch_cb((const int16_t*)data, sizeof(data) / sizeof(unsigned));
+
+      if (audio_batch_cb)
+         audio_batch_cb((const int16_t*)data, sizeof(data) / sizeof(unsigned));
    }
 end:
    {
@@ -208,6 +210,8 @@ end:
       gui_set_message(play_string);
       gui_set_footer("Left/Right = Previous/Next, B = Pause");
       gui_draw();
-      video_cb(gui_get_framebuffer(), frame_width, frame_height, frame_width * sizeof(uint32_t));
+
+      if (video_cb)
+         video_cb(gui_get_framebuffer(), frame_width, frame_height, frame_width * sizeof(uint32_t));
    }
 }

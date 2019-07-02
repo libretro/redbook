@@ -24,6 +24,11 @@ You may obtain a copy of the License at
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 
+#ifdef STANDALONE
+//#define SDL_MAIN_HANDLED
+#include <SDL2/SDL.h>
+#endif
+
 #include <libretro.h>
 #include "redbook.h"
 
@@ -129,7 +134,7 @@ void retro_init(void)
 
    frame_buf = (uint32_t*)calloc(1, VIDEO_PIXELS * sizeof(uint32_t));
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &dir) && dir && *dir)
+   if (environ_cb && environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &dir) && dir && *dir)
    {
       snprintf(retro_base_directory, sizeof(retro_base_directory), "%s", dir);
    }
@@ -331,6 +336,7 @@ void retro_run(void)
    int offset = 0;
    int i;
 
+#ifndef STANDALONE
    update_input();
 
    /* Combine RetroPad input states into one value */
@@ -344,6 +350,7 @@ void retro_run(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
+#endif
 
    redbook_run_frame(input_state);
 }
@@ -364,12 +371,15 @@ bool retro_load_game(const struct retro_game_info *info)
       { 0 },
    };
 
-   environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
-
-   if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+   if (environ_cb)
    {
-      log_cb(RETRO_LOG_INFO, "XRGB8888 is not supported.\n");
-      return false;
+      environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
+
+      if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+      {
+         log_cb(RETRO_LOG_INFO, "XRGB8888 is not supported.\n");
+         return false;
+      }
    }
 
    /*snprintf(retro_game_path, sizeof(retro_game_path), "%s", info->path);
@@ -442,3 +452,52 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
    (void)code;
 }
 
+#ifdef STANDALONE
+int main(int argc, char *argv[])
+{
+   SDL_Event event;
+   SDL_Renderer *renderer = NULL;
+   SDL_Window *window = NULL;
+   SDL_Texture *texture = NULL;
+   struct retro_game_info info = {0};
+
+   if (argc < 2)
+   {
+      fprintf(stderr, "Usage: %s <cue>", argv[0]);
+      exit(1);
+   }
+
+   info.path = argv[1];
+
+   //SDL_SetMainReady();
+   SDL_Init(SDL_INIT_VIDEO);
+   SDL_CreateWindowAndRenderer(VIDEO_WIDTH, VIDEO_HEIGHT, 0, &window, &renderer);
+
+   texture = SDL_CreateTexture(renderer,
+         SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STATIC, VIDEO_WIDTH, VIDEO_HEIGHT);
+
+   retro_init();
+   retro_load_game(&info);
+
+   while (1)
+   {
+      if (SDL_PollEvent(&event) && event.type == SDL_QUIT)
+         break;
+
+      retro_run();
+
+      SDL_RenderClear(renderer);
+      SDL_UpdateTexture(texture, NULL, frame_buf, VIDEO_WIDTH * sizeof(unsigned));
+      SDL_RenderCopy(renderer, texture, NULL, NULL);
+      SDL_RenderPresent(renderer);
+   }
+
+   retro_unload_game();
+
+   SDL_DestroyRenderer(renderer);
+   SDL_DestroyWindow(window);
+   SDL_Quit();
+
+   return 0;
+}
+#endif

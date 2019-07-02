@@ -140,6 +140,13 @@ else
    CXXFLAGS += -O3
 endif
 
+ifeq ($(STANDALONE), 1)
+   CFLAGS += -DSTANDALONE -Dmain=SDL_main
+   CXXFLAGS += -DSTANDALONE -Dmain=SDL_main
+   LDFLAGS += -lmingw32 -lSDL2main -lSDL2 -mwindows
+   TARGET = redbook
+endif
+
 include Makefile.common
 
 OBJECTS := $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o)
@@ -154,7 +161,11 @@ ifeq ($(STATIC_LINKING), 1)
 	$(AR) rcs $@ $(OBJECTS)
 else
 	@$(if $(Q), $(shell echo echo LD $@),)
+ifeq ($(STANDALONE), 1)
+	$(Q)$(CC) $(INCLUDES) -o $@ $(OBJECTS) $(LDFLAGS)
+else
 	$(Q)$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LDFLAGS)
+endif
 endif
 
 %.o: %.c
