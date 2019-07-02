@@ -43,16 +43,16 @@ You may obtain a copy of the License at
    id \
 )
 
-static uint32_t *frame_buf;
-static struct retro_log_callback logging;
+static uint32_t *frame_buf = NULL;
+static struct retro_log_callback logging = {0};
 static retro_log_printf_t log_cb;
 /*static bool use_audio_cb;*/
-static float last_aspect;
-static float last_sample_rate;
-static retro_environment_t environ_cb;
-static char retro_base_directory[4096];
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
+static float last_aspect = 0.0f;
+static float last_sample_rate = 0.0f;
+static retro_environment_t environ_cb = NULL;
+static char retro_base_directory[4096] = {0};
+static retro_input_poll_t input_poll_cb = NULL;
+static retro_input_state_t input_state_cb = NULL;
 /*static char retro_game_path[4096];
 static struct retro_rumble_interface rumble;
 static unsigned phase;

@@ -147,16 +147,10 @@ void redbook_run_frame(unsigned input_state)
    }
 
    {
-      int bytes = ONE_FRAME_AUDIO_BYTES;
+      char data[ONE_FRAME_AUDIO_BYTES] = {0};
 
-      char *data = calloc(1, bytes);
-
-      if (data)
-      {
-         filestream_read(file, data, bytes);
-         audio_batch_cb((const int16_t*)data, bytes / sizeof(unsigned));
-         free(data);
-      }
+      filestream_read(file, data, sizeof(data));
+      audio_batch_cb((const int16_t*)data, sizeof(data) / sizeof(unsigned));
    }
 end:
    {
