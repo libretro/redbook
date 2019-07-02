@@ -258,6 +258,7 @@ void retro_reset(void)
 {
 }
 
+#ifndef STANDALONE
 static void update_input(void)
 {
    struct descriptor *desc = NULL;
@@ -312,7 +313,7 @@ static void update_input(void)
       }
    }
 }
-
+#endif
 
 static void check_variables(void)
 {
@@ -331,12 +332,13 @@ static void audio_set_state(bool enable)
 
 void retro_run(void)
 {
-   bool updated = false;
    unsigned input_state = 0;
-   int offset = 0;
-   int i;
 
 #ifndef STANDALONE
+   int i;
+   int offset = 0;
+   bool updated = false;
+
    update_input();
 
    /* Combine RetroPad input states into one value */

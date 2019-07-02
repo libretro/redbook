@@ -141,9 +141,15 @@ else
 endif
 
 ifeq ($(STANDALONE), 1)
+ifeq ($(platform), win)
    CFLAGS += -DSTANDALONE -Dmain=SDL_main
    CXXFLAGS += -DSTANDALONE -Dmain=SDL_main
    LDFLAGS += -lmingw32 -lSDL2main -lSDL2 -mwindows
+else
+   CFLAGS += -DSTANDALONE
+   CXXFLAGS += -DSTANDALONE
+   LDFLAGS += -lSDL2
+endif
    TARGET = redbook
 endif
 
