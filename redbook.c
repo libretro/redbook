@@ -33,6 +33,7 @@ static RFILE *file = NULL;
 static unsigned char first_audio_track = 1;
 static unsigned char audio_track = 1;
 static bool paused = false;
+static bool audio_tracks_detected = false;
 
 void redbook_init(int width, int height, uint32_t *buf)
 {
@@ -131,6 +132,7 @@ void redbook_run_frame(unsigned input_state)
          if (toc->track[i].audio)
          {
             first_audio_track = i + 1;
+            audio_tracks_detected = true;
             break;
          }
       }
@@ -143,16 +145,20 @@ void redbook_run_frame(unsigned input_state)
 
       audio_track = first_audio_track;
 
-      file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
+      if (audio_tracks_detected)
+         file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
    }
 
    {
       char data[ONE_FRAME_AUDIO_BYTES] = {0};
 
-      filestream_read(file, data, sizeof(data));
+      if (file)
+      {
+         filestream_read(file, data, sizeof(data));
 
-      if (audio_batch_cb)
-         audio_batch_cb((const int16_t*)data, sizeof(data) / sizeof(unsigned));
+         if (audio_batch_cb)
+            audio_batch_cb((const int16_t*)data, sizeof(data) / sizeof(unsigned));
+      }
    }
 end:
    {
@@ -163,14 +169,30 @@ end:
       char audio_pos_string[10] = {0};
       char audio_total_string[10] = {0};
       int i;
-      const libretro_vfs_implementation_file *stream = filestream_get_vfs_handle(file);
-      const vfs_cdrom_t *cdrom = retro_vfs_file_get_cdrom_position(stream);
+      const libretro_vfs_implementation_file *stream;
+      const vfs_cdrom_t *cdrom;
       unsigned char cur_track_min = 0;
       unsigned char cur_track_sec = 0;
       unsigned char cur_track_frame = 0;
       unsigned char total_track_min = 0;
       unsigned char total_track_sec = 0;
       unsigned char total_track_frame = 0;
+
+      if (!file || !audio_tracks_detected)
+      {
+         strlcpy(play_string, "No audio tracks detected.\n", sizeof(play_string));
+
+         gui_set_message(play_string);
+         gui_draw();
+
+         if (video_cb)
+            video_cb(gui_get_framebuffer(), frame_width, frame_height, frame_width * sizeof(uint32_t));
+
+         return;
+      }
+
+      stream = filestream_get_vfs_handle(file);
+      cdrom = retro_vfs_file_get_cdrom_position(stream);
 
       if (cdrom && toc->num_tracks && cdrom->cur_track)
       {
