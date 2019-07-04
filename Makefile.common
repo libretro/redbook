@@ -22,6 +22,9 @@ INCLUDES += -Ilibretro-common/include -Iugui
 
 SOURCES_C := libretro.c redbook.c ugui/ugui.c ugui_tools.c \
   libretro-common/file/file_path.c \
+  libretro-common/file/retro_dirent.c \
+  libretro-common/lists/dir_list.c \
+  libretro-common/lists/string_list.c \
   libretro-common/compat/compat_strl.c \
   libretro-common/compat/compat_strcasestr.c \
   libretro-common/streams/file_stream.c \
