@@ -126,6 +126,13 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
    va_end(va);
 }
 
+size_t audio_sample_batch(const int16_t *data, size_t frames)
+{
+   SDL_QueueAudio(1, data, frames * sizeof(unsigned));
+
+   return frames;
+}
+
 void retro_init(void)
 {
    const char *dir = NULL;
@@ -462,6 +469,7 @@ int main(int argc, char *argv[])
    SDL_Renderer *renderer = NULL;
    SDL_Window *window = NULL;
    SDL_Texture *texture = NULL;
+   SDL_AudioSpec spec = {0};
    struct retro_game_info info = {0};
 
    if (argc < 2)
@@ -470,15 +478,24 @@ int main(int argc, char *argv[])
       exit(1);
    }
 
+   spec.freq = 44100;
+   spec.format = AUDIO_S16;
+   spec.channels = 2;
+   spec.samples = 4096;
+
    info.path = argv[1];
 
    //SDL_SetMainReady();
-   SDL_Init(SDL_INIT_VIDEO);
-   SDL_CreateWindowAndRenderer(VIDEO_WIDTH, VIDEO_HEIGHT, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC, &window, &renderer);
+   SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
+   SDL_OpenAudio(&spec, NULL);
+   SDL_PauseAudioDevice(1, 0);
+   window = SDL_CreateWindow("Redbook Audio Player", 0, 0, VIDEO_WIDTH, VIDEO_HEIGHT, 0);
+   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
    texture = SDL_CreateTexture(renderer,
          SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, VIDEO_WIDTH, VIDEO_HEIGHT);
 
+   retro_set_audio_sample_batch(audio_sample_batch);
    retro_init();
    retro_load_game(&info);
 
