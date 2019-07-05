@@ -126,12 +126,14 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
    va_end(va);
 }
 
-size_t audio_sample_batch(const int16_t *data, size_t frames)
+#ifdef STANDALONE
+static size_t audio_sample_batch(const int16_t *data, size_t frames)
 {
    SDL_QueueAudio(1, data, frames * sizeof(unsigned));
 
    return frames;
 }
+#endif
 
 void retro_init(void)
 {
