@@ -323,11 +323,17 @@ static int cdrom_send_command(const libretro_vfs_implementation_file *stream, CD
    unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
    unsigned char retries_left = CDROM_MAX_RETRIES;
    int rv = 0;
+   size_t padded_req_bytes;
 
    if (!cmd || cmd_len == 0)
       return 1;
 
-   xfer_buf = (unsigned char*)calloc(1, len + skip);
+   if (cmd[0] == 0xBE || cmd[0] == 0xB9)
+      padded_req_bytes = 2352 * ceil((len + skip) / 2352.0);
+   else
+      padded_req_bytes = len + skip;
+
+   xfer_buf = (unsigned char*)calloc(1, padded_req_bytes);
 
    if (!xfer_buf)
       return 1;
@@ -343,6 +349,9 @@ static int cdrom_send_command(const libretro_vfs_implementation_file *stream, CD
          printf("%02X ", cmd[i]);
       }
 
+      if (len)
+         printf("(buffer of size %" PRId64 " with skip bytes %" PRId64 " padded to %" PRId64 ")\n", len, skip, padded_req_bytes);
+
       printf("\n");
       fflush(stdout);
    }
@@ -350,10 +359,10 @@ static int cdrom_send_command(const libretro_vfs_implementation_file *stream, CD
 
 retry:
 #if defined(__linux__) && !defined(ANDROID)
-   if (!cdrom_send_command_linux(fileno(stream->fp), dir, xfer_buf, len + skip, cmd, cmd_len, sense, sizeof(sense)))
+   if (!cdrom_send_command_linux(fileno(stream->fp), dir, xfer_buf, padded_req_bytes, cmd, cmd_len, sense, sizeof(sense)))
 #else
 #if defined(_WIN32) && !defined(_XBOX)
-   if (!cdrom_send_command_win32(stream->fh, dir, xfer_buf, len + skip, cmd, cmd_len, sense, sizeof(sense)))
+   if (!cdrom_send_command_win32(stream->fh, dir, xfer_buf, padded_req_bytes, cmd, cmd_len, sense, sizeof(sense)))
 #endif
 #endif
    {
@@ -1052,6 +1061,59 @@ int cdrom_read(libretro_vfs_implementation_file *stream, unsigned char min, unsi
 
 #ifdef CDROM_DEBUG
       printf("multi-frame read: from %d %d %d to %d %d %d skip %" PRId64 "\n", cdb[3], cdb[4], cdb[5], cdb[6], cdb[7], cdb[8], skip);
+      fflush(stdout);
+#endif
+   }
+
+   rv = cdrom_send_command(stream, DIRECTION_IN, s, len, cdb, sizeof(cdb), skip);
+
+#ifdef CDROM_DEBUG
+   printf("read msf status code %d\n", rv);
+   fflush(stdout);
+#endif
+
+   if (rv)
+      return 1;
+
+   return 0;
+}
+
+int cdrom_read_lba(libretro_vfs_implementation_file *stream, unsigned lba, void *s, size_t len, size_t skip)
+{
+   /* MMC Command: READ CD */
+   unsigned char cdb[] = {0xBE, 0, 0, 0, 0, 0, 0, 0, 0, 0xF8, 0, 0};
+   unsigned lba_orig = lba;
+   int rv;
+
+   lba = swap_if_big32(lba);
+
+   cdb[2] = (lba >> 24) & 0xFF;
+   cdb[3] = (lba >> 16) & 0xFF;
+   cdb[4] = (lba >> 8) & 0xFF;
+   cdb[5] = (lba >> 0) & 0xFF;
+
+   if (len + skip <= 2352)
+   {
+      cdb[8] = 1;
+
+#ifdef CDROM_DEBUG
+      printf("single-frame read: from %d count %d skip %" PRId64 "\n", lba_orig, 1, skip);
+      fflush(stdout);
+#endif
+   }
+   else
+   {
+      unsigned frames = lba_orig + ceil((len + skip) / 2352.0);
+      unsigned lba_count = frames - lba_orig;
+
+      lba_count = swap_if_big32(lba_count);
+
+      cdb[6] = (lba_count >> 16) & 0xFF;
+      cdb[7] = (lba_count >> 8) & 0xFF;
+      cdb[8] = (lba_count >> 0) & 0xFF;
+
+#ifdef CDROM_DEBUG
+      printf("multi-frame read: from %d to %d len %d skip %" PRId64 "\n", lba_orig, frames, frames - lba_orig, skip);
       fflush(stdout);
 #endif
    }
