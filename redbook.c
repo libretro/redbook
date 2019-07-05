@@ -207,8 +207,8 @@ end:
          }
       }
 
-      lba_to_msf(cdrom->cur_lba - toc->track[audio_track - 1].lba, &cur_track_min, &cur_track_sec, &cur_track_frame);
-      lba_to_msf(toc->track[audio_track - 1].track_size, &total_track_min, &total_track_sec, &total_track_frame);
+      cdrom_lba_to_msf(cdrom->cur_lba - toc->track[audio_track - 1].lba, &cur_track_min, &cur_track_sec, &cur_track_frame);
+      cdrom_lba_to_msf(toc->track[audio_track - 1].track_size, &total_track_min, &total_track_sec, &total_track_frame);
 
       snprintf(track_string, sizeof(track_string), "%02u", (unsigned)audio_track);
       snprintf(total_track_string, sizeof(total_track_string), "%02u", (unsigned)toc->num_tracks);
