@@ -31,6 +31,7 @@ You may obtain a copy of the License at
 
 #include <libretro.h>
 #include "redbook.h"
+#include "ugui_tools.h"
 
 #define VIDEO_WIDTH 320
 #define VIDEO_HEIGHT 240
@@ -473,10 +474,10 @@ int main(int argc, char *argv[])
 
    //SDL_SetMainReady();
    SDL_Init(SDL_INIT_VIDEO);
-   SDL_CreateWindowAndRenderer(VIDEO_WIDTH, VIDEO_HEIGHT, 0, &window, &renderer);
+   SDL_CreateWindowAndRenderer(VIDEO_WIDTH, VIDEO_HEIGHT, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC, &window, &renderer);
 
    texture = SDL_CreateTexture(renderer,
-         SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STATIC, VIDEO_WIDTH, VIDEO_HEIGHT);
+         SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, VIDEO_WIDTH, VIDEO_HEIGHT);
 
    retro_init();
    retro_load_game(&info);
@@ -489,7 +490,7 @@ int main(int argc, char *argv[])
       retro_run();
 
       SDL_RenderClear(renderer);
-      SDL_UpdateTexture(texture, NULL, frame_buf, VIDEO_WIDTH * sizeof(unsigned));
+      SDL_UpdateTexture(texture, NULL, gui_get_framebuffer(), VIDEO_WIDTH * sizeof(unsigned));
       SDL_RenderCopy(renderer, texture, NULL, NULL);
       SDL_RenderPresent(renderer);
    }
