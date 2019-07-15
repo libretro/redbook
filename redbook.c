@@ -34,6 +34,52 @@ static unsigned char first_audio_track = 1;
 static unsigned char audio_track = 1;
 static bool paused = false;
 static bool audio_tracks_detected = false;
+static uint64_t avg_left = 0;
+static uint64_t avg_right = 0;
+
+static void previous_track(void)
+{
+   char path[512] = {0};
+   const cdrom_toc_t *toc = retro_vfs_file_get_cdrom_toc();
+
+   if (audio_track > first_audio_track)
+      audio_track--;
+   else
+      audio_track = toc->num_tracks;
+
+   if (file)
+      filestream_close(file);
+
+#ifdef _WIN32
+   snprintf(path, sizeof(path), "cdrom://%c:/drive-track%02d.bin", toc->drive, audio_track);
+#else
+   snprintf(path, sizeof(path), "cdrom://drive%c-track%02d.bin", toc->drive, audio_track);
+#endif
+
+   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
+}
+
+static void next_track(void)
+{
+   char path[512] = {0};
+   const cdrom_toc_t *toc = retro_vfs_file_get_cdrom_toc();
+
+   if (toc->num_tracks > audio_track)
+      audio_track++;
+   else
+      audio_track = first_audio_track;
+
+   if (file)
+      filestream_close(file);
+
+#ifdef _WIN32
+   snprintf(path, sizeof(path), "cdrom://%c:/drive-track%02d.bin", toc->drive, audio_track);
+#else
+   snprintf(path, sizeof(path), "cdrom://drive%c-track%02d.bin", toc->drive, audio_track);
+#endif
+
+   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
+}
 
 void redbook_init(int width, int height, uint32_t *buf)
 {
@@ -80,40 +126,12 @@ void redbook_run_frame(unsigned input_state)
       case (1 << RETRO_DEVICE_ID_JOYPAD_DOWN):
       case (1 << RETRO_DEVICE_ID_JOYPAD_LEFT):
       {
-         if (audio_track > first_audio_track)
-            audio_track--;
-         else
-            audio_track = toc->num_tracks;
-
-         filestream_close(file);
-
-#ifdef _WIN32
-         snprintf(path, sizeof(path), "cdrom://%c:/drive-track%02d.bin", toc->drive, audio_track);
-#else
-         snprintf(path, sizeof(path), "cdrom://drive%c-track%02d.bin", toc->drive, audio_track);
-#endif
-
-         file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
-
+         previous_track();
          break;
       }
       case (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT):
       {
-         if (toc->num_tracks > audio_track)
-            audio_track++;
-         else
-            audio_track = first_audio_track;
-
-         filestream_close(file);
-
-#ifdef _WIN32
-         snprintf(path, sizeof(path), "cdrom://%c:/drive-track%02d.bin", toc->drive, audio_track);
-#else
-         snprintf(path, sizeof(path), "cdrom://drive%c-track%02d.bin", toc->drive, audio_track);
-#endif
-
-         file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
-
+         next_track();
          break;
       }
       default:
@@ -154,10 +172,30 @@ void redbook_run_frame(unsigned input_state)
 
       if (file)
       {
-         filestream_read(file, data, sizeof(data));
+         int64_t bytes_read = filestream_read(file, data, sizeof(data));
 
-         if (audio_batch_cb)
+         if (audio_batch_cb && bytes_read)
+         {
+            int i;
+            avg_left = 0;
+            avg_right = 0;
+
             audio_batch_cb((const int16_t*)data, sizeof(data) / sizeof(unsigned));
+
+            for (i = 0; i < sizeof(data) / sizeof(unsigned); i++)
+            {
+               const int16_t *d = (const int16_t*)data;
+
+               avg_left  += (int64_t)abs(d[(i * 2) + 0]);
+               avg_right += (int64_t)abs(d[(i * 2) + 1]);
+            }
+
+            avg_left /= sizeof(data) / sizeof(unsigned);
+            avg_right /= sizeof(data) / sizeof(unsigned);
+         }
+
+         if (filestream_eof(file))
+            next_track();
       }
    }
 end:
@@ -177,6 +215,7 @@ end:
       unsigned char total_track_min = 0;
       unsigned char total_track_sec = 0;
       unsigned char total_track_frame = 0;
+      unsigned *vbuf = gui_get_framebuffer();
 
       if (!file || !audio_tracks_detected)
       {
@@ -233,7 +272,23 @@ end:
       gui_set_footer("Left/Right = Previous/Next, B = Pause");
       gui_draw();
 
+      if (avg_left)
+      {
+         for (i = 0; i < avg_left / (32768.0 / (double)(frame_width - 10)); i++)
+         {
+            vbuf[frame_width * (int)(frame_height / 1.3) + i + 5] = 0xFFCCCCCC;
+         }
+      }
+
+      if (avg_right)
+      {
+         for (i = 0; i < avg_right / (32768.0 / (double)(frame_width - 10)); i++)
+         {
+            vbuf[frame_width * ((int)(frame_height / 1.3) + 2) + i + 5] = 0xFFCCCCCC;
+         }
+      }
+
       if (video_cb)
-         video_cb(gui_get_framebuffer(), frame_width, frame_height, frame_width * sizeof(uint32_t));
+         video_cb(vbuf, frame_width, frame_height, frame_width * sizeof(uint32_t));
    }
 }
