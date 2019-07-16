@@ -25,8 +25,6 @@ ifneq ($(SANITIZER),)
    LDFLAGS  := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-LDFLAGS += -fuse-ld=gold
-
 ifeq ($(platform),)
 platform = unix
 ifeq ($(shell uname -s),)
