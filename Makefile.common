@@ -30,6 +30,7 @@ SOURCES_C := libretro.c redbook.c ugui/ugui.c ugui_tools.c \
   libretro-common/streams/file_stream.c \
   libretro-common/vfs/vfs_implementation.c \
   libretro-common/vfs/vfs_implementation_cdrom.c \
+  libretro-common/memmap/memalign.c \
   libretro-common/cdrom/cdrom.c
 
 ifeq ($(platform), win)
