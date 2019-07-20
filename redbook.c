@@ -195,7 +195,10 @@ void redbook_run_frame(unsigned input_state)
          }
 
          if (filestream_eof(file))
+         {
             next_track();
+            return;
+         }
       }
    }
 end:
